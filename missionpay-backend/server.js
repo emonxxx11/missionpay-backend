@@ -1,49 +1,65 @@
 import express from 'express';
 import fetch from 'node-fetch';
+import unzipper from 'unzipper';
+import archiver from 'archiver';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// URL of the zip file on GitHub (raw link)
-const zipUrlEnglish = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay.zip';
-const zipUrlBangla = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay%20বাংলা_.zip';
+async function fetchAndExtractZip(url, extractPath) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Failed to fetch zip');
+  await new Promise((resolve, reject) => {
+    response.body
+      .pipe(unzipper.Extract({ path: extractPath }))
+      .on('close', resolve)
+      .on('error', reject);
+  });
+}
 
-// Endpoint for English zip download proxy
+async function streamZippedFolder(res, folderPath, outputFilename) {
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename=${outputFilename}`);
+
+  const archive = archiver('zip');
+  archive.on('error', err => { throw err; });
+
+  archive.pipe(res);
+  archive.directory(folderPath, false);
+  await archive.finalize();
+}
+
 app.get('/download/english', async (req, res) => {
+  const zipUrl = 'https://github.com/emonxxx11/zip-file-apk/raw/main/MissionPay.zip';
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'missionpay-english-'));
+
   try {
-    const response = await fetch(zipUrlEnglish);
-    if (!response.ok) return res.status(502).send('Failed to fetch file');
-
-    res.setHeader('Content-Disposition', 'attachment; filename="MissionPay-English.zip"');
-    res.setHeader('Content-Type', 'application/zip');
-
-    response.body.pipe(res);
-  } catch (error) {
-    res.status(500).send('Server error');
+    await fetchAndExtractZip(zipUrl, tmpDir);
+    await streamZippedFolder(res, tmpDir, 'MissionPay-English.zip');
+    // You can add code here to clean tmpDir after streaming
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error processing English download');
   }
 });
 
-// Endpoint for Bangla zip download proxy
 app.get('/download/bangla', async (req, res) => {
+  const zipUrl = 'https://github.com/emonxxx11/zip-file-apk/raw/main/MissionPay বাংলা_.zip';
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'missionpay-bangla-'));
+
   try {
-    const response = await fetch(zipUrlBangla);
-    if (!response.ok) return res.status(502).send('Failed to fetch file');
-
-    res.setHeader('Content-Disposition', 'attachment; filename="MissionPay-Bangla.zip"');
-    res.setHeader('Content-Type', 'application/zip');
-
-    response.body.pipe(res);
-  } catch (error) {
-    res.status(500).send('Server error');
+    await fetchAndExtractZip(zipUrl, tmpDir);
+    await streamZippedFolder(res, tmpDir, 'MissionPay বাংলা_.zip');
+    // Clean tmpDir if desired
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error processing Bangla download');
   }
 });
 
-// Simple root endpoint
-app.get('/', (req, res) => {
-  res.send('MissionPay backend is running');
-});
-
-// Start server
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
