@@ -1,42 +1,49 @@
-const express = require('express');
-const fetch = require('node-fetch');
-const AdmZip = require('adm-zip');
-const path = require('path');
+import express from 'express';
+import fetch from 'node-fetch';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Example endpoint: /download?lang=english
-app.get('/download', async (req, res) => {
-  const lang = req.query.lang === 'bangla' ? 'MissionPay%20বাংলা_.zip' : 'MissionPay.zip';
+// URL of the zip file on GitHub (raw link)
+const zipUrlEnglish = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay.zip';
+const zipUrlBangla = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay%20বাংলা_.zip';
 
-  const fileUrl = `https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/${lang}`;
-
+// Endpoint for English zip download proxy
+app.get('/download/english', async (req, res) => {
   try {
-    const response = await fetch(fileUrl);
-    const buffer = await response.buffer();
+    const response = await fetch(zipUrlEnglish);
+    if (!response.ok) return res.status(502).send('Failed to fetch file');
 
-    const zip = new AdmZip(buffer);
-    const zipOut = new AdmZip();
+    res.setHeader('Content-Disposition', 'attachment; filename="MissionPay-English.zip"');
+    res.setHeader('Content-Type', 'application/zip');
 
-    zip.getEntries().forEach(entry => {
-      zipOut.addFile(entry.entryName, entry.getData());
-    });
-
-    const zipBuffer = zipOut.toBuffer();
-    res.set('Content-Type', 'application/zip');
-    res.set('Content-Disposition', `attachment; filename="missionpay_extracted.zip"`);
-    res.send(zipBuffer);
+    response.body.pipe(res);
   } catch (error) {
-    console.error(error);
-    res.status(500).send('❌ Failed to download or unzip the file.');
+    res.status(500).send('Server error');
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('✅ MissionPay Backend is Running.');
+// Endpoint for Bangla zip download proxy
+app.get('/download/bangla', async (req, res) => {
+  try {
+    const response = await fetch(zipUrlBangla);
+    if (!response.ok) return res.status(502).send('Failed to fetch file');
+
+    res.setHeader('Content-Disposition', 'attachment; filename="MissionPay-Bangla.zip"');
+    res.setHeader('Content-Type', 'application/zip');
+
+    response.body.pipe(res);
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
 });
 
+// Simple root endpoint
+app.get('/', (req, res) => {
+  res.send('MissionPay backend is running');
+});
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`Server started on port ${PORT}`);
 });
