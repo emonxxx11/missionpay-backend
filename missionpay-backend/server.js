@@ -14,7 +14,7 @@ app.get('/', (req, res) => {
 
 // URLs
 const ENGLISH_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay.zip';
-const BANGLA_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay%20বাংলা_.zip';
+const BANGLA_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay বাংলা_.zip';
 
 // Endpoint to download and unzip
 app.get('/download/:lang', async (req, res) => {
