@@ -13,8 +13,8 @@ app.get('/', (req, res) => {
 });
 
 // URLs
-const ENGLISH_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay.zip';
-const BANGLA_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/MissionPay বাংলা_.zip';
+const ENGLISH_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/𝑴𝒊𝒔𝒔𝒊𝒐𝒏𝑷𝒂𝒚.zip';
+const BANGLA_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/𝑴𝒊𝒔𝒔𝒊𝒐𝒏𝑷𝒂𝒚 বাংলা.zip';
 
 // Endpoint to download and unzip
 app.get('/download/:lang', async (req, res) => {
