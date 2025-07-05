@@ -12,19 +12,19 @@ app.get('/', (req, res) => {
   res.send('✅ MissionPay Backend is Live');
 });
 
-// URLs
+// ZIP file URLs
 const ENGLISH_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/𝑴𝒊𝒔𝒔𝒊𝒐𝒏𝑷𝒂𝒚.zip';
 const BANGLA_ZIP_URL = 'https://raw.githubusercontent.com/emonxxx11/zip-file-apk/main/𝑴𝒊𝒔𝒔𝒊𝒐𝒏𝑷𝒂𝒚 বাংলা.zip';
 
-// Endpoint to download and unzip
 app.get('/download/:lang', async (req, res) => {
-  const lang = req.params.lang;
+  const lang = req.params.lang.toLowerCase();
   const zipUrl = lang === 'bangla' ? BANGLA_ZIP_URL : ENGLISH_ZIP_URL;
 
   try {
     const response = await fetch(zipUrl);
 
     if (!response.ok) {
+      console.error(`❌ Failed to fetch ZIP file: ${response.status}`);
       return res.status(500).send('❌ Failed to download ZIP file.');
     }
 
@@ -33,10 +33,37 @@ app.get('/download/:lang', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="MissionPay-${lang}.apk"`);
     res.setHeader('Content-Type', 'application/vnd.android.package-archive');
 
-    await pipe(zipStream, res);
+    // Optional: timeout protection
+    res.setTimeout(30000, () => {
+      console.warn('⚠️ Download timed out');
+      res.destroy();
+    });
+
+    // Stream error handler
+    zipStream.on('error', (err) => {
+      console.error('❌ Zip stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).send('❌ Stream error while unzipping.');
+      } else {
+        res.destroy();
+      }
+    });
+
+    // Main pipeline with fallback
+    await pipe(zipStream, res).catch((err) => {
+      console.error('❌ Pipeline error:', err);
+      if (!res.headersSent) {
+        res.status(500).send('❌ Failed while streaming APK.');
+      } else {
+        res.destroy();
+      }
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send('❌ Server error while unzipping and sending the file.');
+    console.error('❌ Unexpected error:', err);
+    if (!res.headersSent) {
+      res.status(500).send('❌ Server error while unzipping and sending the file.');
+    }
   }
 });
 
